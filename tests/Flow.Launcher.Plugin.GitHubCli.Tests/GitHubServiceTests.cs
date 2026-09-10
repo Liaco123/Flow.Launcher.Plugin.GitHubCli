@@ -204,6 +204,39 @@ public sealed class GitHubServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_OrganizationRepositories_UsesOwnerAndFiltersCachedResults()
+    {
+        var runner = new RecordingRunner((_, _) => Success(OrganizationRepositoryListJson));
+        var service = CreateService(runner);
+
+        var first = await service.ExecuteAsync(
+            new ParsedQuery(
+                QueryKind.OrganizationRepositories,
+                SearchText: "service",
+                Organization: "Acme"),
+            forceRefresh: false,
+            CancellationToken.None);
+        var second = await service.ExecuteAsync(
+            new ParsedQuery(
+                QueryKind.OrganizationRepositories,
+                SearchText: "desktop launcher",
+                Organization: "Acme"),
+            forceRefresh: false,
+            CancellationToken.None);
+
+        var firstItem = Assert.Single(first.Items);
+        Assert.Equal("Acme/service-api", firstItem.Repository);
+        Assert.Equal("Backend", firstItem.Description);
+
+        var secondItem = Assert.Single(second.Items);
+        Assert.Equal("Acme/flow-plugin", secondItem.Repository);
+        Assert.True(second.IsFromCache);
+        Assert.Single(runner.Calls);
+        Assert.Equal(["repo", "list", "Acme", "--limit", "100"], runner.SingleCall.Take(5));
+        AssertOptionValue(runner.SingleCall, "--json", RepositoryListFields);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Trend_UsesUtcCutoffLanguageAndVerifiedSorting()
     {
         var runner = new RecordingRunner((_, _) => Success(RepositorySearchJson));
@@ -430,6 +463,43 @@ public sealed class GitHubServiceTests
           "pushedAt": null,
           "url": "https://github.com/public/example"
         }]
+        """;
+
+    private const string OrganizationRepositoryListJson = """
+        [
+          {
+            "nameWithOwner": "Acme/service-api",
+            "description": "Backend",
+            "visibility": "PRIVATE",
+            "isPrivate": true,
+            "isArchived": false,
+            "isFork": false,
+            "stargazerCount": 4,
+            "forkCount": 1,
+            "primaryLanguage": { "name": "C#" },
+            "createdAt": "2026-01-02T03:04:05Z",
+            "updatedAt": "2026-09-09T10:11:12Z",
+            "pushedAt": "2026-09-08T09:10:11Z",
+            "url": "https://github.com/Acme/service-api",
+            "viewerPermission": "WRITE"
+          },
+          {
+            "nameWithOwner": "Acme/flow-plugin",
+            "description": "Desktop launcher integration",
+            "visibility": "PUBLIC",
+            "isPrivate": false,
+            "isArchived": false,
+            "isFork": false,
+            "stargazerCount": 10,
+            "forkCount": 2,
+            "primaryLanguage": { "name": "C#" },
+            "createdAt": "2026-02-02T03:04:05Z",
+            "updatedAt": "2026-09-10T10:11:12Z",
+            "pushedAt": "2026-09-10T09:10:11Z",
+            "url": "https://github.com/Acme/flow-plugin",
+            "viewerPermission": "READ"
+          }
+        ]
         """;
 
     private const string PullRequestListJson = """

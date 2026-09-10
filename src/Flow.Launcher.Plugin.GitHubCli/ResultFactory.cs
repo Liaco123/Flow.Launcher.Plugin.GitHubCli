@@ -27,7 +27,7 @@ internal sealed class ResultFactory
                 FirstItemScore),
             CreateNavigationResult(
                 "我的组织",
-                "列出当前 gh 账号加入的组织，可继续输入关键词筛选",
+                "列出当前 gh 账号加入的组织；输入组织名可查看其仓库",
                 "gh org ",
                 FirstItemScore - 1),
             CreateNavigationResult(
@@ -228,7 +228,7 @@ internal sealed class ResultFactory
             ? $"{item.Repository}#{number}"
             : item.Repository;
         var queryText = item.Kind == GitHubItemKind.Organization
-            ? $"gh repo owner:{item.Repository} "
+            ? $"gh org {item.Repository} "
             : $"gh pr {item.Repository} ";
         var queryTitle = item.Kind == GitHubItemKind.Organization
             ? "查看该组织的仓库"
@@ -497,6 +497,7 @@ internal sealed class ResultFactory
             QueryKind.PullRequests => "没有找到匹配的 Pull Request",
             QueryKind.MyWork => "当前没有待处理的 Pull Request",
             QueryKind.Organizations => "没有找到匹配的组织",
+            QueryKind.OrganizationRepositories => "没有找到该组织下匹配的仓库",
             QueryKind.Trend => "没有找到符合条件的 Trend 仓库",
             QueryKind.DirectRepository => "没有找到该仓库",
             QueryKind.DirectPullRequest => "没有找到该 Pull Request",

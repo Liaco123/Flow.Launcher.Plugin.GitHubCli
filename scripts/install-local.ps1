@@ -32,8 +32,23 @@ if (-not (Test-Path -LiteralPath (Join-Path $artifact 'plugin.json'))) {
 }
 
 New-Item -ItemType Directory -Path $pluginsRoot -Force | Out-Null
-if (Test-Path -LiteralPath $target) {
-    Remove-Item -LiteralPath $target -Recurse -Force
+
+$pluginsRootWithoutSeparator = $pluginsRoot.TrimEnd([IO.Path]::DirectorySeparatorChar)
+$installedVersions = @(Get-ChildItem -LiteralPath $pluginsRoot -Directory -Filter 'GitHubCli-*')
+foreach ($installedVersion in $installedVersions) {
+    $installedPath = [IO.Path]::GetFullPath($installedVersion.FullName)
+    $installedParent = [IO.Path]::GetFullPath($installedVersion.Parent.FullName).TrimEnd([IO.Path]::DirectorySeparatorChar)
+
+    if (-not $installedPath.StartsWith($pluginsPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+        -not $installedParent.Equals($pluginsRootWithoutSeparator, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Installed plugin path escaped Flow Launcher's plugin directory: $installedPath"
+    }
+
+    if (($installedVersion.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "Refusing to recursively remove a plugin directory that is a reparse point: $installedPath"
+    }
+
+    Remove-Item -LiteralPath $installedPath -Recurse -Force
 }
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 Copy-Item -Path (Join-Path $artifact '*') -Destination $target -Recurse -Force

@@ -37,7 +37,7 @@ internal static class QueryParser
                 : new ParsedQuery(QueryKind.RepositorySearch, SearchText: remainder),
             "pr" or "prs" or "p" => ParsePullRequests(remainder),
             "me" or "mine" or "m" => new ParsedQuery(QueryKind.MyWork, SearchText: remainder),
-            "org" or "o" => new ParsedQuery(QueryKind.Organizations, SearchText: remainder),
+            "org" or "o" => ParseOrganizations(remainder),
             "trend" or "trending" or "t" => ParseTrend(remainder),
             _ => new ParsedQuery(QueryKind.RepositorySearch, SearchText: value),
         };
@@ -71,6 +71,25 @@ internal static class QueryParser
         }
 
         return new ParsedQuery(QueryKind.PullRequests, SearchText: remainder);
+    }
+
+    private static ParsedQuery ParseOrganizations(string remainder)
+    {
+        if (remainder.Length == 0)
+        {
+            return new ParsedQuery(QueryKind.Organizations);
+        }
+
+        var (organization, searchText) = SplitHead(remainder);
+        if (!IsOwner(organization))
+        {
+            return Invalid("组织名只能包含字母、数字、点、下划线或连字符。");
+        }
+
+        return new ParsedQuery(
+            QueryKind.OrganizationRepositories,
+            SearchText: searchText,
+            Organization: organization);
     }
 
     private static ParsedQuery ParseTrend(string remainder)

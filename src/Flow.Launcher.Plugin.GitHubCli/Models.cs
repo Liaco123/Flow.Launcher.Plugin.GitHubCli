@@ -8,6 +8,7 @@ internal enum QueryKind
     PullRequests,
     MyWork,
     Organizations,
+    OrganizationRepositories,
     Trend,
     DirectRepository,
     DirectPullRequest,

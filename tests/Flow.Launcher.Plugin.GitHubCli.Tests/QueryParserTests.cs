@@ -105,16 +105,30 @@ public sealed class QueryParserTests
     }
 
     [Theory]
-    [InlineData("org", "")]
-    [InlineData("o open", "open")]
-    [InlineData("ORG   platform team", "platform team")]
-    public void Parse_Organizations_ReturnsLocalFilter(
-        string input,
-        string expectedSearchText)
+    [InlineData("org")]
+    [InlineData("O")]
+    public void Parse_Organizations_ReturnsOrganizationList(string input)
     {
         var result = QueryParser.Parse(input);
 
         Assert.Equal(QueryKind.Organizations, result.Kind);
+        Assert.Equal(string.Empty, result.SearchText);
+        Assert.Null(result.Organization);
+    }
+
+    [Theory]
+    [InlineData("o open", "open", "")]
+    [InlineData("ORG   Platform-Team", "Platform-Team", "")]
+    [InlineData("org Acme service api", "Acme", "service api")]
+    public void Parse_OrganizationRepositories_ReturnsOrganizationAndOptionalFilter(
+        string input,
+        string expectedOrganization,
+        string expectedSearchText)
+    {
+        var result = QueryParser.Parse(input);
+
+        Assert.Equal(QueryKind.OrganizationRepositories, result.Kind);
+        Assert.Equal(expectedOrganization, result.Organization);
         Assert.Equal(expectedSearchText, result.SearchText);
     }
 

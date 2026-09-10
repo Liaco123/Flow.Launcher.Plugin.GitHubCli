@@ -138,6 +138,10 @@ internal sealed class GitHubService
             QueryKind.MyWork => await QueryMyWorkAsync(query.SearchText, token)
                 .ConfigureAwait(false),
             QueryKind.Organizations => await QueryOrganizationsAsync(token).ConfigureAwait(false),
+            QueryKind.OrganizationRepositories => await QueryOrganizationRepositoriesAsync(
+                    query,
+                    token)
+                .ConfigureAwait(false),
             QueryKind.Trend => await QueryTrendAsync(query, token).ConfigureAwait(false),
             QueryKind.DirectRepository => await QueryDirectRepositoryAsync(query, token)
                 .ConfigureAwait(false),
@@ -284,6 +288,29 @@ internal sealed class GitHubService
         ];
 
         return await RunAndParseAsync(arguments, ParseOrganizations, token).ConfigureAwait(false);
+    }
+
+    private async Task<GitHubQueryResult> QueryOrganizationRepositoriesAsync(
+        ParsedQuery query,
+        CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(query.Organization))
+        {
+            return Error(GitHubErrorKind.InvalidQuery, "组织仓库查询缺少组织名。");
+        }
+
+        string[] arguments =
+        [
+            "repo",
+            "list",
+            query.Organization,
+            "--limit",
+            RepositoryListLimit.ToString(CultureInfo.InvariantCulture),
+            "--json",
+            RepositoryListJsonFields,
+        ];
+
+        return await RunAndParseAsync(arguments, ParseRepositoryList, token).ConfigureAwait(false);
     }
 
     private async Task<GitHubQueryResult> QueryTrendAsync(
@@ -463,23 +490,31 @@ internal sealed class GitHubService
         ParsedQuery originalQuery,
         GitHubQueryResult result)
     {
-        if (originalQuery.Kind != QueryKind.Organizations
-            || string.IsNullOrWhiteSpace(originalQuery.SearchText))
+        if (string.IsNullOrWhiteSpace(originalQuery.SearchText))
         {
             return result;
         }
 
-        var items = result.Items
-            .Where(item => item.Title.Contains(
-                originalQuery.SearchText,
-                StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        var items = originalQuery.Kind switch
+        {
+            QueryKind.Organizations => result.Items
+                .Where(item => Contains(item.Title, originalQuery.SearchText))
+                .ToArray(),
+            QueryKind.OrganizationRepositories => result.Items
+                .Where(item => Contains(item.Title, originalQuery.SearchText)
+                    || Contains(item.Description, originalQuery.SearchText))
+                .ToArray(),
+            _ => null,
+        };
 
-        return result with { Items = items };
+        return items is null ? result : result with { Items = items };
     }
 
+    private static bool Contains(string? value, string searchText) =>
+        value?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
+
     private static ParsedQuery CanonicalCacheQuery(ParsedQuery query) =>
-        query.Kind == QueryKind.Organizations
+        query.Kind is QueryKind.Organizations or QueryKind.OrganizationRepositories
             ? query with { SearchText = string.Empty }
             : query;
 
@@ -530,7 +565,9 @@ internal sealed class GitHubService
     private static TimeSpan? GetCacheDuration(QueryKind kind) =>
         kind switch
         {
-            QueryKind.MyRepositories or QueryKind.Organizations => TimeSpan.FromMinutes(5),
+            QueryKind.MyRepositories
+                or QueryKind.Organizations
+                or QueryKind.OrganizationRepositories => TimeSpan.FromMinutes(5),
             QueryKind.Trend => TimeSpan.FromMinutes(15),
             QueryKind.RepositorySearch
                 or QueryKind.PullRequests

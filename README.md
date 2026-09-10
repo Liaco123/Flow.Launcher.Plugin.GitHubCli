@@ -7,7 +7,7 @@
 - 列出当前账号拥有的公开与私有仓库
 - 搜索仓库及 Pull Request
 - 汇总我创建的 PR 与等待我 Review 的 PR
-- 列出当前账号所在组织并打开组织主页
+- 列出当前账号所在组织，打开组织主页，并浏览组织仓库
 - 查看近 1、7、30 天新建的热门仓库
 
 ## 查询语法
@@ -18,6 +18,7 @@
 | `gh repo` | 列出自己的仓库 |
 | `gh repo flow launcher` | 全局搜索仓库；`r` 是别名 |
 | `gh org` | 列出自己所在的组织；`o` 是别名 |
+| `gh org <organization> [filter]` | 列出指定组织下可访问的仓库，可选按名称或描述筛选 |
 | `gh pr owner/repo` | 列出指定仓库的开放 PR；`p` 是别名 |
 | `gh pr review-requested:@me` | 跨仓库搜索 PR |
 | `gh me` | 汇总我的开放 PR 和待 Review PR |
@@ -28,7 +29,7 @@
 
 `trend` 使用 `gh search repos --created ... --sort stars`，表示“时间窗口内新建仓库按当前 Star 总数排序”，不是 GitHub 官方 Trending 算法，也不代表窗口内新增 Star 数。
 
-选中仓库、组织或 PR 后按 `Enter` 打开网页；按 `Shift+Enter` 可复制名称、URL，或切换到关联查询。`Ctrl+R` 绕过缓存重新查询。
+选中仓库、组织或 PR 后按 `Enter` 打开网页。组织结果的 `Shift+Enter` 菜单可切换到该组织的仓库列表；其他结果也可通过该菜单复制名称、URL，或切换到关联查询。`Ctrl+R` 绕过缓存重新查询。
 
 ## 环境要求
 
