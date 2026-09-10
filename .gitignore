@@ -1,0 +1,8 @@
+.tools/
+.agents/
+artifacts/
+TestResults/
+**/bin/
+**/obj/
+*.user
+*.suo

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://www.flowlauncher.com/schemas/plugin.schema.json",
+  "ID": "47615338-321a-419e-b3c4-38ea9f11c614",
+  "ActionKeywords": [
+    "gh"
+  ],
+  "Name": "GitHub CLI",
+  "Description": "Search your repositories, organizations, pull requests, and recent popular repositories using the local gh CLI",
+  "Author": "Liaco123",
+  "Version": "0.1.0",
+  "Language": "csharp",
+  "Website": "https://github.com/Liaco123/Flow.Launcher.Plugin.GitHubCli",
+  "ExecuteFileName": "Flow.Launcher.Plugin.GitHubCli.dll",
+  "IcoPath": "Images\\app.png",
+  "MinimumAppVersion": "2.1.3"
+}
