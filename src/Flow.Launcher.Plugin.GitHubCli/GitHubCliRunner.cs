@@ -72,14 +72,14 @@ internal sealed class GitHubCliRunner : IGitHubCliRunner
             {
                 throw new GitHubCliException(
                     GitHubCliFailureKind.NotFound,
-                    "无法启动 GitHub CLI。");
+                    "flowlauncher_plugin_githubcli_runner_start");
             }
         }
         catch (Win32Exception exception)
         {
             throw new GitHubCliException(
                 GitHubCliFailureKind.NotFound,
-                "未找到 gh.exe。请先安装 GitHub CLI，并确保 gh 位于 PATH 中。",
+                "flowlauncher_plugin_githubcli_runner_missing",
                 exception);
         }
 
@@ -106,7 +106,7 @@ internal sealed class GitHubCliRunner : IGitHubCliRunner
                 .ConfigureAwait(false);
             throw new GitHubCliException(
                 GitHubCliFailureKind.TimedOut,
-                $"GitHub CLI 查询超过 {_timeout.TotalSeconds:0.#} 秒，已取消。");
+                Localization.Prefix + "runner_timeout", messageArguments: [_timeout.TotalSeconds]);
         }
         catch (OperationCanceledException)
         {

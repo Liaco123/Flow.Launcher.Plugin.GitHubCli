@@ -54,6 +54,9 @@ New-Item -ItemType Directory -Path $pluginOutput -Force | Out-Null
 & $dotnet publish $project --configuration Release --no-restore --output $pluginOutput
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed.' }
 
+& (Join-Path $PSScriptRoot 'test-install-local.ps1')
+
 Compress-Archive -Path (Join-Path $pluginOutput '*') -DestinationPath $zipPath -CompressionLevel Optimal
+& (Join-Path $PSScriptRoot 'test-package.ps1')
 Write-Host "Plugin: $pluginOutput"
 Write-Host "Package: $zipPath"

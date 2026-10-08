@@ -9,11 +9,13 @@ internal sealed class ResultFactory
     private const int FirstItemScore = 1_000;
 
     private readonly IPublicAPI _api;
+    private readonly Localization _text;
 
     internal ResultFactory(IPublicAPI api)
     {
         ArgumentNullException.ThrowIfNull(api);
         _api = api;
+        _text = new Localization(api);
     }
 
     internal List<Result> CreateHomeResults()
@@ -21,28 +23,28 @@ internal sealed class ResultFactory
         return
         [
             CreateNavigationResult(
-                "我的仓库",
-                "列出当前 gh 账号拥有的仓库",
+                _text.Get("home_repos"),
+                _text.Get("home_repos_hint"),
                 "gh repo ",
                 FirstItemScore),
             CreateNavigationResult(
-                "我的组织",
-                "列出当前 gh 账号加入的组织；输入组织名可查看其仓库",
+                _text.Get("home_orgs"),
+                _text.Get("home_orgs_hint"),
                 "gh org ",
                 FirstItemScore - 1),
             CreateNavigationResult(
-                "Pull Requests",
-                "搜索仓库中的 Pull Request，或跨仓库搜索",
+                _text.Get("home_prs"),
+                _text.Get("home_prs_hint"),
                 "gh pr ",
                 FirstItemScore - 2),
             CreateNavigationResult(
-                "我的工作",
-                "查看我创建的以及等待我审阅的 Pull Request",
+                _text.Get("home_work"),
+                _text.Get("home_work_hint"),
                 "gh me ",
                 FirstItemScore - 3),
             CreateNavigationResult(
-                "GitHub Trend",
-                "查看近 1/7/30 天新建且当前 Star 较高的仓库",
+                _text.Get("home_trend"),
+                _text.Get("home_trend_hint"),
                 "gh trend ",
                 FirstItemScore - 4),
         ];
@@ -78,7 +80,8 @@ internal sealed class ResultFactory
                 errorKind,
                 queryResult.ErrorMessage,
                 retryQuery,
-                queryResult.IsStale && queryResult.Items.Count > 0));
+                queryResult.IsStale && queryResult.Items.Count > 0,
+                queryResult.ErrorMessageArguments));
         }
 
         var itemScoreOffset = results.Count;
@@ -106,7 +109,7 @@ internal sealed class ResultFactory
         [
             CreateErrorResult(
                 GitHubErrorKind.InvalidResponse,
-                "插件处理查询时发生意外错误。",
+                _text.Get("unexpected_error"),
                 retryQuery,
                 hasStaleItems: false),
         ];
@@ -128,7 +131,7 @@ internal sealed class ResultFactory
             var url = contextItem.Url;
             results.Add(new Result
             {
-                Title = contextItem.OpenTitle ?? "在 GitHub 中打开",
+                Title = _text.Message(contextItem.OpenTitle) ?? _text.Get("open_github"),
                 SubTitle = url,
                 IcoPath = IconPath,
                 RecordKey = $"context:open:{url}",
@@ -141,7 +144,7 @@ internal sealed class ResultFactory
 
             results.Add(new Result
             {
-                Title = "复制 URL",
+                Title = _text.Get("copy_url"),
                 SubTitle = url,
                 IcoPath = IconPath,
                 RecordKey = $"context:copy-url:{url}",
@@ -158,7 +161,7 @@ internal sealed class ResultFactory
             var identifier = contextItem.Identifier;
             results.Add(new Result
             {
-                Title = "复制标识",
+                Title = _text.Get("copy_identifier"),
                 SubTitle = identifier,
                 IcoPath = IconPath,
                 RecordKey = $"context:copy-identifier:{identifier}",
@@ -175,7 +178,7 @@ internal sealed class ResultFactory
             var queryText = contextItem.QueryText;
             results.Add(new Result
             {
-                Title = contextItem.QueryTitle ?? "切换查询",
+                Title = _text.Message(contextItem.QueryTitle) ?? _text.Get("switch_query"),
                 SubTitle = queryText.TrimEnd(),
                 AutoCompleteText = queryText,
                 IcoPath = IconPath,
@@ -208,7 +211,7 @@ internal sealed class ResultFactory
             RecordKey = $"home:{queryText.Trim()}",
             ContextData = new ContextItem(
                 QueryText: queryText,
-                QueryTitle: "使用此查询"),
+                QueryTitle: Localization.Prefix + "use_query"),
             AsyncAction = _ =>
             {
                 _api.ChangeQuery(queryText);
@@ -231,8 +234,8 @@ internal sealed class ResultFactory
             ? $"gh org {item.Repository} "
             : $"gh pr {item.Repository} ";
         var queryTitle = item.Kind == GitHubItemKind.Organization
-            ? "查看该组织的仓库"
-            : "查看该仓库的 Pull Requests";
+            ? Localization.Prefix + "org_repositories"
+            : Localization.Prefix + "repo_prs";
         var autoCompleteText = item.Kind == GitHubItemKind.Organization
             ? $"gh org {item.Repository}"
             : $"gh {identifier}";
@@ -264,12 +267,12 @@ internal sealed class ResultFactory
         GitHubErrorKind errorKind,
         string? errorMessage,
         string retryQuery,
-        bool hasStaleItems)
+        bool hasStaleItems, object[]? errorArguments = null)
     {
         var title = hasStaleItems
-            ? "刷新失败，正在显示缓存结果"
+            ? _text.Get("stale_error")
             : ErrorTitle(errorKind);
-        var message = CompactMessage(errorMessage) ?? ErrorFallbackMessage(errorKind);
+        var message = CompactMessage(_text.Message(errorMessage, errorArguments)) ?? ErrorFallbackMessage(errorKind);
         var recovery = CreateRecovery(errorKind, retryQuery);
 
         return new Result
@@ -305,13 +308,13 @@ internal sealed class ResultFactory
         return new Result
         {
             Title = EmptyTitle(query.Kind),
-            SubTitle = "按 Enter 返回 GitHub CLI 首页",
+            SubTitle = _text.Get("home_hint"),
             IcoPath = IconPath,
             AddSelectedCount = false,
             RecordKey = $"empty:{query.Kind}",
             ContextData = new ContextItem(
                 QueryText: HomeQuery,
-                QueryTitle: "返回 GitHub CLI 首页"),
+                QueryTitle: Localization.Prefix + "go_home"),
             AsyncAction = _ =>
             {
                 _api.ChangeQuery(HomeQuery);
@@ -330,7 +333,7 @@ internal sealed class ResultFactory
         return $"{item.Repository} #{number} · {item.Title}";
     }
 
-    private static string CreateItemSubtitle(
+    private string CreateItemSubtitle(
         ParsedQuery query,
         GitHubItem item,
         bool isFromCache,
@@ -340,20 +343,20 @@ internal sealed class ResultFactory
 
         if (isStale)
         {
-            parts.Add("旧缓存");
+            parts.Add(_text.Get("stale_cache"));
         }
         else if (isFromCache)
         {
-            parts.Add("缓存");
+            parts.Add(_text.Get("cache"));
         }
 
         if (query.Kind == QueryKind.Trend)
         {
             parts.Add(query.TrendPeriod switch
             {
-                TrendPeriod.Daily => "近 1 天新建",
-                TrendPeriod.Monthly => "近 30 天新建",
-                _ => "近 7 天新建",
+                TrendPeriod.Daily => _text.Get("trend_daily"),
+                TrendPeriod.Monthly => _text.Get("trend_monthly"),
+                _ => _text.Get("trend_weekly"),
             });
         }
 
@@ -363,7 +366,7 @@ internal sealed class ResultFactory
         }
         else if (item.Kind == GitHubItemKind.Organization)
         {
-            parts.Add("GitHub 组织");
+            parts.Add(_text.Get("organization"));
         }
         else
         {
@@ -379,59 +382,59 @@ internal sealed class ResultFactory
             ? string.Join(" · ", parts)
             : item.Kind switch
             {
-                GitHubItemKind.PullRequest => "GitHub Pull Request",
-                GitHubItemKind.Organization => "GitHub 组织",
-                _ => "GitHub 仓库",
+                GitHubItemKind.PullRequest => _text.Get("pull_request"),
+                GitHubItemKind.Organization => _text.Get("organization"),
+                _ => _text.Get("repository"),
             };
     }
 
-    private static void AddPullRequestDetails(List<string> parts, GitHubItem item)
+    private void AddPullRequestDetails(List<string> parts, GitHubItem item)
     {
         if (item.IsDraft)
         {
-            parts.Add("草稿");
+            parts.Add(_text.Get("draft"));
         }
 
         if (!string.IsNullOrWhiteSpace(item.State))
         {
-            parts.Add(item.State.ToUpperInvariant());
+            parts.Add(_text.Status(item.State));
         }
 
         if (item.Relationship == GitHubRelationship.Authored)
         {
-            parts.Add("我创建的");
+            parts.Add(_text.Get("authored"));
         }
         else if (item.Relationship == GitHubRelationship.ReviewRequested)
         {
-            parts.Add("等待我审阅");
+            parts.Add(_text.Get("review_requested"));
         }
 
         if (!string.IsNullOrWhiteSpace(item.ReviewDecision))
         {
-            parts.Add($"Review {item.ReviewDecision.ToUpperInvariant()}");
+            parts.Add(_text.Format("review", _text.Status(item.ReviewDecision)));
         }
 
         if (!string.IsNullOrWhiteSpace(item.Author))
         {
-            parts.Add($"作者 {item.Author}");
+            parts.Add(_text.Format("author", item.Author));
         }
 
         if (item.UpdatedAt is { } updatedAt)
         {
-            parts.Add($"更新于 {FormatDate(updatedAt)}");
+            parts.Add(_text.Format("updated", FormatDate(updatedAt)));
         }
     }
 
-    private static void AddRepositoryDetails(List<string> parts, GitHubItem item)
+    private void AddRepositoryDetails(List<string> parts, GitHubItem item)
     {
         if (item.IsArchived)
         {
-            parts.Add("已归档");
+            parts.Add(_text.Get("archived"));
         }
 
         if (!string.IsNullOrWhiteSpace(item.Visibility))
         {
-            parts.Add(item.Visibility.ToUpperInvariant());
+            parts.Add(_text.Status(item.Visibility));
         }
 
         if (!string.IsNullOrWhiteSpace(item.Language))
@@ -446,12 +449,12 @@ internal sealed class ResultFactory
 
         if (item.ForkCount is { } forks)
         {
-            parts.Add($"Fork {forks:N0}");
+            parts.Add(_text.Format("forks", forks));
         }
 
         if ((item.PushedAt ?? item.UpdatedAt) is { } activityAt)
         {
-            parts.Add($"更新于 {FormatDate(activityAt)}");
+            parts.Add(_text.Format("updated", FormatDate(activityAt)));
         }
     }
 
@@ -460,73 +463,73 @@ internal sealed class ResultFactory
         return value.ToLocalTime().ToString("yyyy-MM-dd");
     }
 
-    private static string ErrorTitle(GitHubErrorKind errorKind)
+    private string ErrorTitle(GitHubErrorKind errorKind)
     {
         return errorKind switch
         {
-            GitHubErrorKind.AuthenticationRequired => "GitHub CLI 尚未登录",
-            GitHubErrorKind.CommandFailed => "GitHub CLI 查询失败",
-            GitHubErrorKind.InvalidQuery => "查询格式无效",
-            GitHubErrorKind.InvalidResponse => "无法解析 GitHub CLI 返回结果",
-            GitHubErrorKind.CliUnavailable => "未找到 GitHub CLI",
-            GitHubErrorKind.Timeout => "GitHub CLI 查询超时",
-            _ => "GitHub CLI 查询失败",
+            GitHubErrorKind.AuthenticationRequired => _text.Get("error_auth"),
+            GitHubErrorKind.CommandFailed => _text.Get("error_command"),
+            GitHubErrorKind.InvalidQuery => _text.Get("error_invalid_query"),
+            GitHubErrorKind.InvalidResponse => _text.Get("error_invalid_response"),
+            GitHubErrorKind.CliUnavailable => _text.Get("error_unavailable"),
+            GitHubErrorKind.Timeout => _text.Get("error_timeout"),
+            _ => _text.Get("error_command"),
         };
     }
 
-    private static string ErrorFallbackMessage(GitHubErrorKind errorKind)
+    private string ErrorFallbackMessage(GitHubErrorKind errorKind)
     {
         return errorKind switch
         {
-            GitHubErrorKind.AuthenticationRequired => "请先使用 gh auth login 登录 GitHub。",
-            GitHubErrorKind.CommandFailed => "gh 命令未能完成查询。",
-            GitHubErrorKind.InvalidQuery => "请修改查询参数后重试。",
-            GitHubErrorKind.InvalidResponse => "gh 返回了插件无法识别的数据。",
-            GitHubErrorKind.CliUnavailable => "请安装 GitHub CLI，并确保 gh.exe 位于 PATH 中。",
-            GitHubErrorKind.Timeout => "查询超过等待时间。",
-            _ => "查询未能完成。",
+            GitHubErrorKind.AuthenticationRequired => _text.Get("fallback_auth"),
+            GitHubErrorKind.CommandFailed => _text.Get("fallback_command"),
+            GitHubErrorKind.InvalidQuery => _text.Get("fallback_invalid_query"),
+            GitHubErrorKind.InvalidResponse => _text.Get("fallback_invalid_response"),
+            GitHubErrorKind.CliUnavailable => _text.Get("fallback_unavailable"),
+            GitHubErrorKind.Timeout => _text.Get("fallback_timeout"),
+            _ => _text.Get("fallback_error"),
         };
     }
 
-    private static string EmptyTitle(QueryKind queryKind)
+    private string EmptyTitle(QueryKind queryKind)
     {
         return queryKind switch
         {
-            QueryKind.MyRepositories => "没有找到当前账号拥有的仓库",
-            QueryKind.RepositorySearch => "没有找到匹配的仓库",
-            QueryKind.PullRequests => "没有找到匹配的 Pull Request",
-            QueryKind.MyWork => "当前没有待处理的 Pull Request",
-            QueryKind.Organizations => "没有找到匹配的组织",
-            QueryKind.OrganizationRepositories => "没有找到该组织下匹配的仓库",
-            QueryKind.Trend => "没有找到符合条件的 Trend 仓库",
-            QueryKind.DirectRepository => "没有找到该仓库",
-            QueryKind.DirectPullRequest => "没有找到该 Pull Request",
-            _ => "没有找到结果",
+            QueryKind.MyRepositories => _text.Get("empty_my_repos"),
+            QueryKind.RepositorySearch => _text.Get("empty_repos"),
+            QueryKind.PullRequests => _text.Get("empty_prs"),
+            QueryKind.MyWork => _text.Get("empty_work"),
+            QueryKind.Organizations => _text.Get("empty_orgs"),
+            QueryKind.OrganizationRepositories => _text.Get("empty_org_repos"),
+            QueryKind.Trend => _text.Get("empty_trend"),
+            QueryKind.DirectRepository => _text.Get("empty_repo"),
+            QueryKind.DirectPullRequest => _text.Get("empty_pr"),
+            _ => _text.Get("empty_results"),
         };
     }
 
-    private static ErrorRecovery CreateRecovery(
+    private ErrorRecovery CreateRecovery(
         GitHubErrorKind errorKind,
         string retryQuery)
     {
         return errorKind switch
         {
             GitHubErrorKind.CliUnavailable => new ErrorRecovery(
-                Hint: "按 Enter 打开安装页面",
+                Hint: _text.Get("install_hint"),
                 Url: "https://cli.github.com/",
-                OpenTitle: "打开 GitHub CLI 安装页面"),
+                OpenTitle: Localization.Prefix + "install_page"),
             GitHubErrorKind.AuthenticationRequired => new ErrorRecovery(
-                Hint: "按 Enter 查看登录命令",
+                Hint: _text.Get("auth_hint"),
                 Url: "https://cli.github.com/manual/gh_auth_login",
-                OpenTitle: "查看 gh auth login 用法"),
+                OpenTitle: Localization.Prefix + "auth_usage"),
             GitHubErrorKind.InvalidQuery => new ErrorRecovery(
-                Hint: "按 Enter 返回插件首页",
+                Hint: _text.Get("invalid_hint"),
                 QueryText: HomeQuery,
-                QueryTitle: "返回 GitHub CLI 首页"),
+                QueryTitle: Localization.Prefix + "go_home"),
             _ => new ErrorRecovery(
-                Hint: "按 Enter 重试",
+                Hint: _text.Get("retry_hint"),
                 QueryText: retryQuery,
-                QueryTitle: "重试查询",
+                QueryTitle: Localization.Prefix + "retry_query",
                 ForceRequery: true),
         };
     }

@@ -31,7 +31,7 @@ internal static class QueryParser
         {
             "home" => remainder.Length == 0
                 ? new ParsedQuery(QueryKind.Home)
-                : Invalid("home 命令不接受参数。"),
+                : Invalid("flowlauncher_plugin_githubcli_invalid_home"),
             "repo" or "repos" or "r" => remainder.Length == 0
                 ? new ParsedQuery(QueryKind.MyRepositories)
                 : new ParsedQuery(QueryKind.RepositorySearch, SearchText: remainder),
@@ -67,7 +67,7 @@ internal static class QueryParser
 
         if (first.Contains('#', StringComparison.Ordinal))
         {
-            return Invalid("PR 直达格式应为 owner/repo#编号，且编号必须大于 0。");
+            return Invalid("flowlauncher_plugin_githubcli_invalid_direct_pr");
         }
 
         return new ParsedQuery(QueryKind.PullRequests, SearchText: remainder);
@@ -83,7 +83,7 @@ internal static class QueryParser
         var (organization, searchText) = SplitHead(remainder);
         if (!IsOwner(organization))
         {
-            return Invalid("组织名只能包含字母、数字、点、下划线或连字符。");
+            return Invalid("flowlauncher_plugin_githubcli_invalid_org");
         }
 
         return new ParsedQuery(
@@ -117,7 +117,7 @@ internal static class QueryParser
                 || (periodText.EndsWith('d')
                     && periodText[..^1].All(char.IsAsciiDigit)))
             {
-                return Invalid("Trend 周期只能是 daily、weekly 或 monthly。");
+                return Invalid("flowlauncher_plugin_githubcli_invalid_period");
             }
 
             period = Flow.Launcher.Plugin.GitHubCli.TrendPeriod.Weekly;
@@ -131,7 +131,7 @@ internal static class QueryParser
         var language = NormalizeLanguage(languageText);
         if (languageText.Length > 0 && language is null)
         {
-            return Invalid("语言参数不能为空。");
+            return Invalid("flowlauncher_plugin_githubcli_invalid_language");
         }
 
         return new ParsedQuery(
@@ -164,7 +164,7 @@ internal static class QueryParser
                 out var number)
             || number <= 0)
         {
-            return Invalid("PR 编号必须是大于 0 的整数。");
+            return Invalid("flowlauncher_plugin_githubcli_invalid_pr_number");
         }
 
         return new ParsedQuery(

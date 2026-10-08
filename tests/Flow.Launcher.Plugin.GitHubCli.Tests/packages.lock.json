@@ -8,6 +8,15 @@
         "resolved": "6.0.2",
         "contentHash": "bJShQ6uWRTQ100ZeyiMqcFlhP7WJ+bCuabUs885dJiBEzMsJMSFr7BOyeCw4rgvQokteGi5rKQTlkhfQPUXg2A=="
       },
+      "Flow.Launcher.Plugin": {
+        "type": "Direct",
+        "requested": "[5.3.1, )",
+        "resolved": "5.3.1",
+        "contentHash": "0TG58Nz4BgOJTG+9lt4Wno7sb7G/4nMgNBUEF/eWgEj0tFip3q+h4uiEvhHMv0ZCLlgHt3L0GlrBKP3GpS4Z6A==",
+        "dependencies": {
+          "JetBrains.Annotations": "2025.2.2"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.12.0, )",
@@ -34,14 +43,6 @@
         "requested": "[2.8.2, )",
         "resolved": "2.8.2",
         "contentHash": "vm1tbfXhFmjFMUmS4M0J0ASXz3/U5XvXBa6DOQUL3fEz4Vt6YPhv+ESCarx6M6D+9kJkJYZKCNvJMas1+nVfmQ=="
-      },
-      "Flow.Launcher.Plugin": {
-        "type": "Transitive",
-        "resolved": "5.3.1",
-        "contentHash": "0TG58Nz4BgOJTG+9lt4Wno7sb7G/4nMgNBUEF/eWgEj0tFip3q+h4uiEvhHMv0ZCLlgHt3L0GlrBKP3GpS4Z6A==",
-        "dependencies": {
-          "JetBrains.Annotations": "2025.2.2"
-        }
       },
       "JetBrains.Annotations": {
         "type": "Transitive",

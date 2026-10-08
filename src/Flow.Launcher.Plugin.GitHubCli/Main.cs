@@ -5,10 +5,11 @@ namespace Flow.Launcher.Plugin.GitHubCli;
 /// <summary>
 /// Flow Launcher entry point for querying GitHub through the local GitHub CLI.
 /// </summary>
-public sealed class Main : IAsyncPlugin, IContextMenu
+public sealed class Main : IAsyncPlugin, IContextMenu, IPluginI18n
 {
     private GitHubService _gitHubService = null!;
     private ResultFactory _resultFactory = null!;
+    private Localization? _localization;
 
     /// <inheritdoc />
     public Task InitAsync(PluginInitContext context)
@@ -17,9 +18,19 @@ public sealed class Main : IAsyncPlugin, IContextMenu
 
         _gitHubService = new GitHubService(new GitHubCliRunner());
         _resultFactory = new ResultFactory(context.API);
+        _localization = new Localization(context.API);
 
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public string GetTranslatedPluginTitle() =>
+        _localization?.Get("plugin_name") ?? "GitHub CLI";
+
+    /// <inheritdoc />
+    public string GetTranslatedPluginDescription() =>
+        _localization?.Get("plugin_description") ??
+        "Search your repositories, organizations, pull requests, and recent popular repositories using the local gh CLI";
 
     /// <inheritdoc />
     public async Task<List<Result>> QueryAsync(

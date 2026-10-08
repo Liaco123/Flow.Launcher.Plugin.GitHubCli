@@ -7,7 +7,7 @@
   "Name": "GitHub CLI",
   "Description": "Search your repositories, organizations, pull requests, and recent popular repositories using the local gh CLI",
   "Author": "Liaco123",
-  "Version": "0.1.1",
+  "Version": "0.1.2",
   "Language": "csharp",
   "Website": "https://github.com/Liaco123/Flow.Launcher.Plugin.GitHubCli",
   "ExecuteFileName": "Flow.Launcher.Plugin.GitHubCli.dll",

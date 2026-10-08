@@ -66,7 +66,7 @@ internal sealed class GitHubService
         {
             return Error(
                 GitHubErrorKind.InvalidQuery,
-                query.ErrorMessage ?? "查询格式无效。");
+                query.ErrorMessage ?? "flowlauncher_plugin_githubcli_service_invalid");
         }
 
         var cacheQuery = CanonicalCacheQuery(query);
@@ -93,13 +93,13 @@ internal sealed class GitHubService
         }
         catch (GitHubCliException exception)
         {
-            result = Error(MapFailureKind(exception.Kind), exception.Message);
+            result = Error(MapFailureKind(exception.Kind), exception.Message, exception.MessageArguments);
         }
         catch (JsonException)
         {
             result = Error(
                 GitHubErrorKind.InvalidResponse,
-                "gh 返回了无法解析的数据。请重试或在终端中检查 gh 命令输出。");
+                "flowlauncher_plugin_githubcli_service_response");
         }
 
         if (result.IsSuccess)
@@ -116,6 +116,7 @@ internal sealed class GitHubService
                 {
                     ErrorKind = result.ErrorKind,
                     ErrorMessage = result.ErrorMessage,
+                    ErrorMessageArguments = result.ErrorMessageArguments,
                     IsFromCache = true,
                     IsStale = true,
                 });
@@ -147,7 +148,7 @@ internal sealed class GitHubService
                 .ConfigureAwait(false),
             QueryKind.DirectPullRequest => await QueryDirectPullRequestAsync(query, token)
                 .ConfigureAwait(false),
-            _ => Error(GitHubErrorKind.InvalidQuery, "不支持的查询类型。"),
+            _ => Error(GitHubErrorKind.InvalidQuery, "flowlauncher_plugin_githubcli_service_unsupported"),
         };
     }
 
@@ -296,7 +297,7 @@ internal sealed class GitHubService
     {
         if (string.IsNullOrWhiteSpace(query.Organization))
         {
-            return Error(GitHubErrorKind.InvalidQuery, "组织仓库查询缺少组织名。");
+            return Error(GitHubErrorKind.InvalidQuery, "flowlauncher_plugin_githubcli_service_org_missing");
         }
 
         string[] arguments =
@@ -319,7 +320,7 @@ internal sealed class GitHubService
     {
         if (query.TrendPeriod is null)
         {
-            return Error(GitHubErrorKind.InvalidQuery, "Trend 查询缺少时间周期。");
+            return Error(GitHubErrorKind.InvalidQuery, "flowlauncher_plugin_githubcli_service_period_missing");
         }
 
         var cutoff = _utcNow()
@@ -362,7 +363,7 @@ internal sealed class GitHubService
     {
         if (string.IsNullOrWhiteSpace(query.Repository))
         {
-            return Error(GitHubErrorKind.InvalidQuery, "仓库直达查询缺少 owner/repo。");
+            return Error(GitHubErrorKind.InvalidQuery, "flowlauncher_plugin_githubcli_service_repo_missing");
         }
 
         string[] arguments =
@@ -386,7 +387,7 @@ internal sealed class GitHubService
             || query.PullRequestNumber is null
             || query.PullRequestNumber <= 0)
         {
-            return Error(GitHubErrorKind.InvalidQuery, "PR 直达查询缺少有效的 owner/repo#编号。");
+            return Error(GitHubErrorKind.InvalidQuery, "flowlauncher_plugin_githubcli_service_pr_missing");
         }
 
         string[] arguments =
@@ -468,14 +469,12 @@ internal sealed class GitHubService
         {
             return Error(
                 GitHubErrorKind.AuthenticationRequired,
-                "gh 尚未登录。请先在终端运行 gh auth login。");
+                "flowlauncher_plugin_githubcli_service_auth");
         }
 
-        var message = string.IsNullOrWhiteSpace(command.StandardError)
-            ? $"gh 查询失败，退出码为 {command.ExitCode}."
-            : command.StandardError;
-
-        return Error(GitHubErrorKind.CommandFailed, message);
+        return string.IsNullOrWhiteSpace(command.StandardError)
+            ? Error(GitHubErrorKind.CommandFailed, Localization.Prefix + "service_exit", command.ExitCode)
+            : Error(GitHubErrorKind.CommandFailed, command.StandardError);
     }
 
     private static GitHubErrorKind MapFailureKind(GitHubCliFailureKind kind) =>
@@ -582,8 +581,9 @@ internal sealed class GitHubService
 
     private static GitHubQueryResult Error(
         GitHubErrorKind kind,
-        string message) =>
-        new([], kind, message);
+        string message,
+        params object[] messageArguments) =>
+        new([], kind, message, ErrorMessageArguments: messageArguments);
 
     private sealed record CacheEntry(
         GitHubQueryResult Result,

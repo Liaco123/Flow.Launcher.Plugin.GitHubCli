@@ -10,7 +10,7 @@ public sealed class ResultFactoryTests
     [Fact]
     public void CreateHomeResults_Organizations_ExplainsRepositoryQuery()
     {
-        var api = DispatchProxy.Create<IPublicAPI, NoOpPublicApiProxy>();
+        var api = DispatchProxy.Create<IPublicAPI, TranslationApiProxy>();
         var factory = new ResultFactory(api);
 
         var result = Assert.Single(
@@ -24,7 +24,7 @@ public sealed class ResultFactoryTests
     [Fact]
     public void CreateContextMenus_Organization_UsesOrganizationRepositoryQuery()
     {
-        var api = DispatchProxy.Create<IPublicAPI, NoOpPublicApiProxy>();
+        var api = DispatchProxy.Create<IPublicAPI, TranslationApiProxy>();
         var factory = new ResultFactory(api);
         var organization = new GitHubItem(
             GitHubItemKind.Organization,
@@ -45,11 +45,4 @@ public sealed class ResultFactoryTests
         Assert.Equal("https://github.com/Acme", ((ContextItem)result.ContextData).Url);
     }
 
-    public class NoOpPublicApiProxy : DispatchProxy
-    {
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            throw new NotSupportedException("The API should not be called while creating result metadata.");
-        }
-    }
 }

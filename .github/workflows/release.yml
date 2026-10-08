@@ -39,9 +39,14 @@ jobs:
       - run: dotnet restore Flow.Launcher.Plugin.GitHubCli.sln --locked-mode
       - run: dotnet test Flow.Launcher.Plugin.GitHubCli.sln --configuration Release --no-restore
       - run: dotnet publish src/Flow.Launcher.Plugin.GitHubCli/Flow.Launcher.Plugin.GitHubCli.csproj --configuration Release --no-restore --output artifacts/plugin
+      - name: Verify local installer
+        shell: pwsh
+        run: ./scripts/test-install-local.ps1
       - name: Package plugin
         shell: pwsh
-        run: Compress-Archive -Path 'artifacts/plugin/*' -DestinationPath 'artifacts/Flow.Launcher.Plugin.GitHubCli.zip' -CompressionLevel Optimal
+        run: |
+          Compress-Archive -Path 'artifacts/plugin/*' -DestinationPath 'artifacts/Flow.Launcher.Plugin.GitHubCli.zip' -CompressionLevel Optimal
+          ./scripts/test-package.ps1
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         if: github.ref_type == 'tag'
         with:

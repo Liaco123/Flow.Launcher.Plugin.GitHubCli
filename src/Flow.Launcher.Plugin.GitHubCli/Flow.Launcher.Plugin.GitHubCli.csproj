@@ -16,15 +16,22 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>false</DebugSymbols>
     <DebugType>None</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Flow.Launcher.Plugin" Version="5.3.1" />
+    <!-- Flow supplies the plugin API at runtime; only use this package for compilation. -->
+    <PackageReference Include="Flow.Launcher.Plugin" Version="5.3.1" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="plugin.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Page Remove="Languages\*.xaml" />
+    <Content Include="Languages\*.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="Images\app.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

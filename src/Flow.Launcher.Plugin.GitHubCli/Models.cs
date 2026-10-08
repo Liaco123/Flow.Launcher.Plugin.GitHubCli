@@ -84,7 +84,8 @@ internal sealed record GitHubQueryResult(
     GitHubErrorKind? ErrorKind = null,
     string? ErrorMessage = null,
     bool IsFromCache = false,
-    bool IsStale = false)
+    bool IsStale = false,
+    object[]? ErrorMessageArguments = null)
 {
     internal bool IsSuccess => ErrorKind is null;
 }
